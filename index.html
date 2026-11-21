@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tebak Kata — Word Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .letter { width: clamp(2.25rem, 8vw, 3.35rem); height: clamp(2.7rem, 9vw, 3.8rem); }
+    .pop { animation: pop .18s ease-out; }
+    @keyframes pop { from { transform: scale(.92); opacity:.6 } to { transform:scale(1); opacity:1 } }
+    button:focus-visible, input:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 3px; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <main class="mx-auto flex min-h-screen max-w-4xl items-center justify-center p-4">
+    <section class="w-full overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl shadow-indigo-950/30">
+      <header class="flex items-center justify-between border-b border-slate-800 px-6 py-5">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[.25em] text-indigo-400">Word Quest</p>
+          <h1 class="text-xl font-black tracking-tight sm:text-2xl">Tebak Kata</h1>
+        </div>
+        <span class="rounded-full border border-indigo-400/30 bg-indigo-400/10 px-3 py-1 text-xs font-semibold text-indigo-300">Mini Game</span>
+      </header>
+
+      <div class="p-5 sm:p-8">
+        <!-- Menu utama -->
+        <section id="mainMenu" class="space-y-6 text-center">
+          <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-3xl bg-indigo-500/15 text-5xl">🔤</div>
+          <div class="space-y-2">
+            <h2 class="text-3xl font-black sm:text-4xl">Uji kosakatamu!</h2>
+            <p class="mx-auto max-w-md text-sm leading-6 text-slate-400">Temukan kata rahasia sebelum kesempatanmu habis. Pilih level dan mulai tantangannya.</p>
+          </div>
+          <div class="mx-auto grid max-w-sm gap-3">
+            <button id="startBtn" class="rounded-xl bg-indigo-500 px-5 py-3 font-bold text-white transition hover:bg-indigo-400">Mulai bermain</button>
+            <button id="howBtn" class="rounded-xl border border-slate-700 px-5 py-3 font-semibold transition hover:bg-slate-800">Cara main</button>
+            <button id="exitBtn" class="rounded-xl px-5 py-3 font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white">Keluar</button>
+          </div>
+        </section>
+
+        <!-- Pilih level -->
+        <section id="levelMenu" class="hidden space-y-6">
+          <div><button class="backBtn text-sm font-semibold text-indigo-300 hover:text-indigo-200">← Kembali</button></div>
+          <div class="text-center"><h2 class="text-2xl font-black">Pilih level</h2><p class="mt-2 text-sm text-slate-400">Semakin tinggi level, semakin panjang kata dan semakin sedikit kesempatan.</p></div>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <button data-level="easy" class="levelBtn rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-left hover:bg-emerald-500/20"><span class="text-2xl">🌱</span><h3 class="mt-3 font-bold text-emerald-300">Easy</h3><p class="mt-1 text-xs text-slate-400">4 huruf · 8 kesempatan</p></button>
+            <button data-level="medium" class="levelBtn rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-left hover:bg-amber-500/20"><span class="text-2xl">🔥</span><h3 class="mt-3 font-bold text-amber-300">Medium</h3><p class="mt-1 text-xs text-slate-400">5 huruf · 7 kesempatan</p></button>
+            <button data-level="hard" class="levelBtn rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5 text-left hover:bg-rose-500/20"><span class="text-2xl">⚡</span><h3 class="mt-3 font-bold text-rose-300">High</h3><p class="mt-1 text-xs text-slate-400">6 huruf · 6 kesempatan</p></button>
+          </div>
+        </section>
+
+        <!-- Cara main -->
+        <section id="howMenu" class="hidden space-y-5">
+          <button class="backBtn text-sm font-semibold text-indigo-300 hover:text-indigo-200">← Kembali</button>
+          <h2 class="text-2xl font-black">Cara bermain</h2>
+          <ol class="list-decimal space-y-3 pl-5 text-sm leading-6 text-slate-300">
+            <li>Pilih salah satu level: Easy, Medium, atau High.</li>
+            <li>Masukkan tebakan berupa huruf A–Z sesuai panjang kata pada level.</li>
+            <li>Tekan tombol <b class="text-white">Tebak</b> atau tombol Enter.</li>
+            <li>Huruf yang benar akan terbuka pada posisinya. Huruf yang salah mengurangi kesempatan.</li>
+            <li>Kamu menang jika semua huruf terbuka sebelum kesempatan habis. Jika kesempatan habis, kamu kalah.</li>
+          </ol>
+          <p class="rounded-xl bg-slate-800 p-4 text-xs leading-5 text-slate-400">Catatan: setiap tebakan harus memiliki panjang yang tepat dan hanya boleh berisi huruf. Tebakan yang sama tidak mengurangi kesempatan.</p>
+        </section>
+
+        <!-- Area permainan -->
+        <section id="gameArea" class="hidden space-y-6">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div><p class="text-xs uppercase tracking-widest text-slate-500">Level</p><p id="levelLabel" class="font-bold text-indigo-300">Easy</p></div>
+            <div class="text-right"><p class="text-xs uppercase tracking-widest text-slate-500">Kesempatan</p><p class="font-bold"><span id="attemptsLeft">8</span> tersisa</p></div>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-slate-800"><div id="attemptBar" class="h-full rounded-full bg-emerald-400 transition-all" style="width:100%"></div></div>
+          <div class="rounded-2xl bg-slate-950/70 p-5 text-center sm:p-7">
+            <p class="text-xs font-semibold uppercase tracking-[.2em] text-slate-500">Kata rahasia</p>
+            <div id="wordDisplay" class="mt-5 flex flex-wrap justify-center gap-2" aria-live="polite"></div>
+            <p id="hintText" class="mt-4 text-sm text-slate-400">Petunjuk: —</p>
+          </div>
+          <div class="space-y-3">
+            <label for="guessInput" class="block text-sm font-semibold">Masukkan tebakan kata</label>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <input id="guessInput" type="text" maxlength="6" autocomplete="off" placeholder="Ketik kata di sini" class="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 uppercase tracking-widest text-white placeholder:normal-case placeholder:tracking-normal focus:border-indigo-400 focus:outline-none">
+              <button id="guessBtn" class="rounded-xl bg-indigo-500 px-6 py-3 font-bold hover:bg-indigo-400">Tebak</button>
+            </div>
+            <p id="feedback" class="min-h-5 text-sm text-slate-400" role="status" aria-live="polite"></p>
+          </div>
+          <div class="flex flex-wrap gap-2 border-t border-slate-800 pt-4">
+            <button id="giveUpBtn" class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Menyerah</button>
+            <button id="menuBtn" class="rounded-lg px-4 py-2 text-sm text-slate-400 hover:bg-slate-800">Menu utama</button>
+          </div>
+        </section>
+
+        <!-- Hasil -->
+        <section id="resultArea" class="hidden space-y-5 text-center">
+          <div id="resultEmoji" class="text-6xl">🎉</div>
+          <h2 id="resultTitle" class="text-3xl font-black">Kamu menang!</h2>
+          <p id="resultMessage" class="text-slate-400"></p>
+          <div class="rounded-2xl bg-slate-950 p-5"><p class="text-xs uppercase tracking-widest text-slate-500">Kata yang benar</p><p id="answerReveal" class="mt-2 text-2xl font-black tracking-[.2em] text-indigo-300"></p></div>
+          <div class="flex flex-col justify-center gap-3 sm:flex-row">
+            <button id="againBtn" class="rounded-xl bg-indigo-500 px-6 py-3 font-bold hover:bg-indigo-400">Main lagi</button>
+            <button id="resultMenuBtn" class="rounded-xl border border-slate-700 px-6 py-3 font-semibold hover:bg-slate-800">Menu utama</button>
+          </div>
+        </section>
+
+        <!-- Keluar -->
+        <section id="exitArea" class="hidden space-y-4 py-8 text-center">
+          <div class="text-5xl">👋</div><h2 class="text-2xl font-black">Terima kasih sudah bermain!</h2>
+          <p class="text-slate-400">Kamu bisa menutup tab ini atau kembali ke menu utama.</p>
+          <button id="returnBtn" class="rounded-xl bg-indigo-500 px-6 py-3 font-bold hover:bg-indigo-400">Kembali ke menu</button>
+        </section>
+      </div>
+      <footer class="border-t border-slate-800 px-6 py-4 text-center text-xs text-slate-500">Word Quest · by alip</footer>
+    </section>
+  </main>
+
+<script>
+$(function () {
+  "use strict";
+
+  const LEVELS = {
+    easy:   { label: "Easy", attempts: 8, words: [{word:"BUKU",hint:"Benda untuk membaca."},{word:"MEJA",hint:"Furnitur untuk meletakkan barang."},{word:"IKAN",hint:"Hewan yang hidup di air."}] },
+    medium: { label: "Medium", attempts: 7, words: [{word:"GELAS",hint:"Wadah untuk minum."},{word:"PINTU",hint:"Bagian rumah untuk keluar-masuk."},{word:"KURSI",hint:"Tempat untuk duduk."}] },
+    hard:   { label: "High", attempts: 6, words: [{word:"KAMERA",hint:"Alat untuk mengambil gambar."},{word:"KERTAS",hint:"Media untuk menulis atau menggambar."},{word:"KOMPOR",hint:"Alat untuk memasak."}] }
+  };
+  let currentLevel = null, answer = "", hint = "", attemptsLeft = 0;
+  let guessedLetters = [], gameOver = false;
+
+  // Fungsi 1: menampilkan satu halaman dan menyembunyikan halaman lainnya.
+  function showScreen(screenId) {
+    $("#mainMenu, #levelMenu, #howMenu, #gameArea, #resultArea, #exitArea").addClass("hidden");
+    $("#" + screenId).removeClass("hidden");
+  }
+
+  // Fungsi 2: memilih kata secara acak dari level yang dipilih.
+  function chooseWord(levelKey) {
+    const words = LEVELS[levelKey].words;
+    return words[Math.floor(Math.random() * words.length)];
+  }
+
+  // Fungsi 3: menggambar tampilan huruf berdasarkan tebakan yang sudah benar.
+  function renderWord() {
+    const letters = answer.split("");
+    $("#wordDisplay").empty();
+    letters.forEach(function (letter) {
+      const isVisible = guessedLetters.includes(letter);
+      const tile = $("<span>").addClass("letter pop flex items-center justify-center rounded-xl border text-xl font-black")
+        .addClass(isVisible ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-slate-700 bg-slate-800 text-slate-500")
+        .text(isVisible ? letter : "?");
+      $("#wordDisplay").append(tile);
+    });
+  }
+
+  // Fungsi 4: memperbarui jumlah kesempatan dan progress bar.
+  function updateAttempts() {
+    const total = LEVELS[currentLevel].attempts;
+    $("#attemptsLeft").text(attemptsLeft);
+    $("#attemptBar").css("width", ((attemptsLeft / total) * 100) + "%")
+      .toggleClass("bg-emerald-400", attemptsLeft > 2)
+      .toggleClass("bg-rose-400", attemptsLeft <= 2);
+  }
+
+  // Fungsi 5: memeriksa kondisi menang/kalah dan menampilkan hasil.
+  function finishGame(won) {
+    if (gameOver) return;
+    gameOver = true;
+    $("#resultEmoji").text(won ? "🎉" : "😅");
+    $("#resultTitle").text(won ? "Kamu menang!" : "Kesempatan habis!");
+    $("#resultMessage").text(won ? "Hebat! Kamu berhasil menebak kata rahasia." : "Jangan menyerah, coba lagi di permainan berikutnya.");
+    $("#answerReveal").text(answer);
+    showScreen("resultArea");
+  }
+
+  // Fungsi 6: memvalidasi dan memproses input tebakan.
+  function submitGuess() {
+    if (gameOver) return;
+    const guess = String($("#guessInput").val() || "").trim().toUpperCase();
+
+    if (!guess) { $("#feedback").text("Masukkan huruf terlebih dahulu.").removeClass("text-emerald-300").addClass("text-rose-300"); return; }
+    if (!/^[A-Z]+$/.test(guess)) { $("#feedback").text("Input hanya boleh berisi huruf A–Z.").removeClass("text-emerald-300").addClass("text-rose-300"); return; }
+    if (guess.length !== answer.length) { $("#feedback").text("Panjang kata harus " + answer.length + " huruf.").removeClass("text-emerald-300").addClass("text-rose-300"); return; }
+
+    // Tebakan kata yang tepat langsung menang.
+    if (guess === answer) {
+      guessedLetters = answer.split("");
+      renderWord();
+      $("#feedback").text("Tebakan tepat!").removeClass("text-rose-300").addClass("text-emerald-300");
+      finishGame(true);
+      return;
+    }
+
+    // Input kata diperlakukan sebagai tebakan seluruh huruf.
+    const newLetters = [...new Set(guess.split(""))].filter(letter => !guessedLetters.includes(letter));
+    if (newLetters.length === 0) {
+      $("#feedback").text("Huruf tersebut sudah pernah dicoba.").removeClass("text-emerald-300").addClass("text-rose-300");
+      return;
+    }
+    newLetters.forEach(letter => guessedLetters.push(letter));
+    const hasCorrectLetter = newLetters.some(letter => answer.includes(letter));
+    if (!hasCorrectLetter) attemptsLeft--;
+    renderWord();
+    updateAttempts();
+    $("#feedback").text(hasCorrectLetter ? "Ada huruf yang cocok! Lanjutkan." : "Belum tepat. Kesempatan berkurang 1.")
+      .toggleClass("text-emerald-300", hasCorrectLetter).toggleClass("text-rose-300", !hasCorrectLetter);
+    $("#guessInput").val("");
+
+    if (answer.split("").every(letter => guessedLetters.includes(letter))) finishGame(true);
+    else if (attemptsLeft <= 0) finishGame(false);
+  }
+
+  function startGame(levelKey) {
+    if (!Object.prototype.hasOwnProperty.call(LEVELS, levelKey)) return;
+    currentLevel = levelKey;
+    const selected = chooseWord(levelKey);
+    answer = selected.word;
+    hint = selected.hint;
+    attemptsLeft = LEVELS[levelKey].attempts;
+    guessedLetters = [];
+    gameOver = false;
+    $("#levelLabel").text(LEVELS[levelKey].label);
+    $("#guessInput").attr("maxlength", answer.length).val("");
+    $("#guessInput").attr("placeholder", "Masukkan " + answer.length + " huruf");
+    $("#hintText").text("Petunjuk: " + hint);
+    $("#feedback").text("Tebak kata berdasarkan petunjuk di atas.").removeClass("text-rose-300 text-emerald-300");
+    renderWord();
+    updateAttempts();
+    showScreen("gameArea");
+    $("#guessInput").trigger("focus");
+  }
+
+  $("#startBtn").on("click", () => showScreen("levelMenu"));
+  $("#howBtn").on("click", () => showScreen("howMenu"));
+  $("#exitBtn").on("click", () => showScreen("exitArea"));
+  $(".backBtn").on("click", () => showScreen("mainMenu"));
+  $(".levelBtn").on("click", function () { startGame($(this).data("level")); });
+  $("#guessBtn").on("click", submitGuess);
+  $("#guessInput").on("keydown", function (event) { if (event.key === "Enter") submitGuess(); });
+  $("#giveUpBtn").on("click", () => finishGame(false));
+  $("#menuBtn, #resultMenuBtn").on("click", () => showScreen("mainMenu"));
+  $("#againBtn").on("click", () => startGame(currentLevel));
+  $("#returnBtn").on("click", () => showScreen("mainMenu"));
+});
+</script>
+</body>
+</html>
